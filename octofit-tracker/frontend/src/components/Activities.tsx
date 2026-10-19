@@ -1,3 +1,4 @@
+import { getJson } from '../api/client.js';
 import { CapabilityCard } from './CapabilityCard.js';
 
 type ActivityRecord = {
@@ -9,12 +10,16 @@ type ActivityRecord = {
 
 type ActivitiesResponse = { activities: ActivityRecord[] };
 
+function loadActivities() {
+  return getJson<ActivitiesResponse>('/api/activities');
+}
+
 export default function Activities() {
   return (
     <CapabilityCard<ActivitiesResponse>
       title="Activities"
       description="Track student activity minutes and points."
-      path="/api/activities"
+      loadData={loadActivities}
       emptyMessage="No activities yet."
       isEmpty={({ activities }) => activities.length === 0}
       renderData={({ activities }) => (

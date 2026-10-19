@@ -4,7 +4,7 @@ import { getJson } from '../api/client.js';
 type Props<T> = {
   title: string;
   description: string;
-  path: string;
+  loadData: () => Promise<T>;
   emptyMessage: string;
   isEmpty: (data: T) => boolean;
   renderData: (data: T) => ReactNode;
@@ -15,12 +15,12 @@ type ResourceState<T> =
   | { status: 'error' }
   | { status: 'success'; data: T };
 
-export function CapabilityCard<T>({ title, description, path, emptyMessage, isEmpty, renderData }: Props<T>) {
+export function CapabilityCard<T>({ title, description, loadData, emptyMessage, isEmpty, renderData }: Props<T>) {
   const [resource, setResource] = useState<ResourceState<T>>({ status: 'loading' });
 
   useEffect(() => {
     let isCurrent = true;
-    getJson<T>(path)
+    loadData()
       .then((data) => {
         if (isCurrent) setResource({ status: 'success', data });
       })
@@ -31,7 +31,7 @@ export function CapabilityCard<T>({ title, description, path, emptyMessage, isEm
     return () => {
       isCurrent = false;
     };
-  }, [path]);
+  }, [loadData]);
 
   return (
     <section className="card h-100">
