@@ -30,20 +30,22 @@ OctoFit Tracker is a three-tier application for a school fitness program. The st
 
 Record your plan here before editing code.
 
-- Presentation tier decision:
-- Logic tier decision:
-- Data tier decision:
-- Activity tracking approach:
-- Team management approach:
-- Leaderboard approach:
-- Workout suggestions approach:
+- Presentation tier decision: Keep route-level React components responsible for rendering and user interaction, and use the shared API client for all relative `/api` requests. Every capability view must expose loading, accessible error, and meaningful empty states before rendering returned data; do not add authentication.
+- Logic tier decision: Keep HTTP parsing/status codes in the Express router and put validation, persistence orchestration, scoring, and recommendations in `octofitService.ts`. Return deliberate 4xx responses for invalid input, malformed or missing references, and unknown users rather than leaking Mongoose cast errors as 500s.
+- Data tier decision: Use Mongoose schemas as the persistence boundary. Require user identity and fitness goal; require team name and mascot with an empty members array by default; require activity type, user/team references, minutes, points, and occurrence date; and require workout focus, minutes, and difficulty. Keep the seed repeatable and non-destructive to unrelated records.
+- Activity tracking approach: Accept `userId`, `teamId`, `type`, and `minutes`; validate that both IDs are valid and refer to existing records; compute points server-side at one point per minute; and store the references, type, minutes, points, and occurrence time.
+- Team management approach: Reject a missing or blank name with `400`; preserve the submitted name and mascot; accept an optional members list of existing user IDs; and return the created/listed team with its member references.
+- Leaderboard approach: Aggregate persisted activity points by team, include teams with no activity at zero, sort by total points descending, and assign 1-based ranks in the response.
+- Workout suggestions approach: Resolve users by email and return a 4xx for an unknown address. Prefer workouts matching the user's fitness goal, using recent activity as a fallback signal; include a short reason for the first suggestion that names the matching goal or activity.
+- Implementation order: Complete model constraints and data tests first; implement and test the service/API contract next; then connect the presentation views and verify their loading, error, empty, and populated states. Run both builds and the full suites after the tier-specific checks pass.
 
 ## Test plan
 
 Record the commands you run and what each failure means.
 
-- Data-tier command: `npm run test:data --prefix octofit-tracker/backend`
-- API command: `npm run test:api --prefix octofit-tracker/backend`
-- Frontend command: `npm test --prefix octofit-tracker/frontend`
-- Backend build command: `npm run build --prefix octofit-tracker/backend`
-- Frontend build command: `npm run build --prefix octofit-tracker/frontend`
+- Data-tier command: `npm run test:data --prefix octofit-tracker/backend` checks required schema fields, defaults, references, and repeatable/non-destructive seeding. A failure points to persistence shape or seed behavior.
+- API command: `npm run test:api --prefix octofit-tracker/backend` checks activity/team creation and validation, leaderboard aggregation/ranking, and goal/activity-based workout suggestions. A failure points to service behavior or its HTTP contract.
+- Frontend command: `npm test --prefix octofit-tracker/frontend` checks API requests and populated, loading, empty, and accessible error states across all four routes. A failure points to presentation behavior or API-client integration.
+- Backend build command: `npm run build --prefix octofit-tracker/backend` runs the TypeScript check; a failure indicates backend type or module errors.
+- Frontend build command: `npm run build --prefix octofit-tracker/frontend` runs the TypeScript check and Vite production build; a failure indicates frontend type or bundling errors.
+- Run order: data tests, API tests, frontend tests, then both builds. Once these focused checks pass, run `npm test --prefix octofit-tracker/backend` and `npm test --prefix octofit-tracker/frontend` as the final full-suite verification.
